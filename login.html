@@ -1,0 +1,76 @@
+<html>
+
+<head>
+	<title>OdinLine </title>
+	<meta charset="utf-8">
+	<link type="text/css" rel="stylesheet" href="./css/bootstrap.css" />
+	<link type="text/css" rel="stylesheet" href="css/estilos.css" />
+</head>
+
+
+<body onload="configurar()">
+	<div class="container mt-4">
+
+		<h1 class="text-center border-bottom border-danger mb-4">Usuário</h1>
+		<div class="row">
+			<div class="col-md-6">
+				<form id="formularioCadastro" action="#" method="post">
+					<fieldset>
+						<div class="row mb-3">
+							<div class="col-12">
+								<label class="form-label" for="loginCadastro">Login</label>
+								<input class="form-control" id="loginCadastro" name="loginCadastro" type="text"
+									required>
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-12">
+								<label class="form-label" for="senhaCadastro">Senha</label>
+								<input class="form-control" id="senhaCadastro" name="senhaCadastro" type="password"
+									required>
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-12 d-flex justify-content-end">
+								<button class="btn btn-success" type="button" onclick="cadastrar()">Cadastrar</button>
+							</div>
+						</div>
+					</fieldset>
+				</form>
+			</div>
+
+			<div class="col-md-6">
+				<form id="formularioAutenticacao" action="#" method="post">
+					<fieldset>
+						<div class="row mb-3">
+							<div class="col-12">
+								<label class="form-label" for="loginAutenticar">Login</label>
+								<input class="form-control" id="loginAutenticar" name="loginAutenticar" type="text"
+									required>
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-12">
+								<label class="form-label" for="senhaAutenticar">Senha</label>
+								<input class="form-control" id="senhaAutenticar" name="senhaAutenticar" type="password"
+									required>
+							</div>
+						</div>
+
+						<div class="row mb-3">
+							<div class="col-12 d-flex justify-content-end">
+								<button class="btn btn-primary" type="button" onclick="autenticar()">Autenticar</button>
+							</div>
+						</div>
+					</fieldset>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<script type="text/javascript" src="js/bootstrap.js"></script>
+	<script type="text/javascript" src="js/usuario.js"></script>
+	<script type="text/javascript" src="js/exercicio02Formulario.js"></script>
+</body>
+
+</html>
