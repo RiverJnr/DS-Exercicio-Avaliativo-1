@@ -1,10 +1,9 @@
 class Usuario {
-  constructor(login, senha) {
+  constructor(id, nome, login, email, chave) {
     this.login = login;
-    this.senha = senha;
+    this.email = email;
+    this.id = id;
+    this.nome = nome;
+    this.chave = chave;
   }
 }
-
-
-
-
