@@ -1,52 +1,50 @@
 function configurar() {
-    if (!localStorage.usuarioAutenticado) {
-        alert('Acesso negado');
-        window.location.href = "login.html";
-    } else {
-        let usuarioAutenticado = JSON.parse(localStorage.getItem('usuarioAutenticado'));
-        document.getElementById("login").textContent = usuarioAutenticado.login;
+    const usuario = JSON.parse(localStorage.getItem("usuarioAutenticado"));
+    if (usuario) {
+        document.getElementById("login").textContent = usuario.login || "Desconhecido";
+        carregarProdutos(usuario.chave);
     }
 
-    exibirTabela();
+    const alertas = JSON.parse(localStorage.getItem("alertasPreco")) || [];
+    alertas.forEach(adicionarNaTabela);
+
+    setInterval(verificarAlertasDePreco, 30000);
 }
 
+async function carregarProdutos(chave) {
+    const select = document.getElementById("produtoSelect");
 
-function exibirTabela() {
+    try {
+        const resposta = await fetch(`https://api-odinline.odiloncorrea.com/produto/${chave}/usuario`);
+        const produtos = await resposta.json();
 
-    var tabela = document.getElementById("tabela");
-    apagarLinhas(tabela);
+        select.innerHTML = '<option selected disabled>Selecione um produto</option>';
 
-    //recupera o vetor na memória secundária
-    var vagas = JSON.parse(localStorage.getItem('vagas'));
-
-    vagas.forEach(vaga => {
-        adicionarLinha(tabela, vaga)
-    });
+        produtos.forEach(produto => {
+            const option = document.createElement("option");
+            option.value = produto.id;
+            option.textContent = produto.descricao + ' - R$' + produto.valor.toFixed(2);
+            select.appendChild(option);
+        });
+    } catch (erro) {
+        console.error("Erro ao carregar produtos:", erro);
+        select.innerHTML = '<option disabled>Erro ao carregar</option>';
+    }
 }
 
-function adicionarLinha(tabela, vaga) {
-    // Seleciona o corpo da tabela 
-    var tbody = tabela.querySelector("tbody");
+function adicionarNaTabela(alerta) {
+    const tabela = document.querySelector("#tabela tbody");
+    const tr = document.createElement("tr");
 
-    // Cria uma nova linha
-    var novaLinha = document.createElement("tr");
+    tr.innerHTML = `
+        <td>${alerta.descricao}</td>
+        <td>R$ ${alerta.valorAlerta.toFixed(2)}</td>
+        <td>${alerta.acao === "comprar" ? "Compra Automática" : "Exibir Alerta"}</td>
+    `;
 
-    // Cria e adiciona na nova linha as células com os valores
-    var colunaNumero = document.createElement("td");
-    colunaNumero.textContent = vaga.numero;
-    novaLinha.appendChild(colunaNumero);
-
-    var colunaPlaca = document.createElement("td");
-    colunaPlaca.textContent = vaga.placa;
-    novaLinha.appendChild(colunaPlaca);
-
-    var colunaLogin = document.createElement("td");
-    colunaLogin.textContent = vaga.login;
-    novaLinha.appendChild(colunaLogin);
-
-    // Adiciona a nova linha ao tbody
-    tbody.appendChild(novaLinha);
+    tabela.appendChild(tr);
 }
+
 
 function apagarLinhas(tabela) {
     // Seleciona o corpo da tabela 
@@ -58,33 +56,51 @@ function apagarLinhas(tabela) {
     }
 }
 
+function cadastrar() {
+    const produtoSelect = document.getElementById("produtoSelect");
+    const produtoSelecionado = produtoSelect.options[produtoSelect.selectedIndex];
+    const descricao = produtoSelecionado.text;
+    const chaveProduto = produtoSelecionado.value;
+    const valorAlerta = parseFloat(document.getElementById("valorAlerta").value);
+    const acao = document.getElementById("acaoAlerta").value;
 
-function registrar() {
-    //recupera o vetor de registros na memória secundária
-    let vagas = JSON.parse(localStorage.getItem('vagas'));
+    if (!chaveProduto || isNaN(valorAlerta)) {
+        alert("Preencha todos os campos corretamente.");
+        return;
+    }
 
-    let placa = document.getElementById("placa").value;
-    let vaga = document.getElementById("vaga").value;
+    const alerta = {
+        chaveProduto,
+        descricao,
+        valorAlerta,
+        acao
+    };
 
-    let usuarioAutenticado = JSON.parse(localStorage.getItem('usuarioAutenticado'));
+    let alertas = JSON.parse(localStorage.getItem("alertasPreco")) || [];
+    alertas.push(alerta);
+    localStorage.setItem("alertasPreco", JSON.stringify(alertas));
 
-    if (vagas.some(p => p.placa == placa)) {
-        alert('A placa informada já foi registrada');
-    } else {
-        if (vagas[vaga].placa.length > 0) {
-            alert('A vaga selecionada está indisponível');
-        } else {
+    adicionarNaTabela(alerta);
+}
 
-            vagas[vaga].placa = placa;
-            vagas[vaga].login = usuarioAutenticado.login;
+async function verificarAlertasDePreco() {
+    const alertas = JSON.parse(localStorage.getItem("alertasPreco")) || [];
 
-            //armazena o vetor na memória secundária
-            localStorage.setItem('vagas', JSON.stringify(vagas));
+    for (const alerta of alertas) {
+        try {
+            const resposta = await fetch(`https://api-odinline.odiloncorrea.com/produto/${alerta.chaveProduto}`);
+            const produto = await resposta.json();
 
-            alert('Registro realizado com sucesso');
+            if (produto && produto.valor <= alerta.valorAlerta) {
+                if (alerta.acao === "alerta") {
+                    alert(`O produto "${alerta.descricao}" atingiu o valor desejado!`);
+                } else if (alerta.acao === "comprar") {
+                    console.log(`Simulando compra do produto "${alerta.descricao}"...`);
+                }
+            }
 
-            exibirTabela();
-
+        } catch (erro) {
+            console.error("Erro ao verificar preço:", erro);
         }
     }
 }
