@@ -1,12 +1,26 @@
 function configurar() {
     const usuario = JSON.parse(localStorage.getItem("usuarioAutenticado"));
     if (usuario) {
-        document.getElementById("login").textContent = usuario.login || "Desconhecido";
+        document.getElementById("login").textContent = usuario.nome || "Desconhecido";
         carregarProdutos(usuario.chave);
     }
 
-    const alertas = JSON.parse(localStorage.getItem("alertasPreco")) || [];
-    alertas.forEach(adicionarNaTabela);
+    atualizarTabela();
+
+    $('#valorAlerta').mask('R$ 000.000.000,00', {
+        reverse: true,
+        selectOnFocus: true
+    });
+
+    $('#valorAlerta').on('focus', function () {
+        if (!this.value.includes('R$')) {
+            $(this).val('R$ ');
+        }
+
+        setTimeout(() => {
+            this.setSelectionRange(this.value.length, this.value.length);
+        }, 10);
+    });
 
     setInterval(verificarAlertasDePreco, 30000);
 }
@@ -32,7 +46,7 @@ async function carregarProdutos(chave) {
     }
 }
 
-function adicionarNaTabela(alerta) {
+function adicionarNaTabela(alerta, indice) {
     const tabela = document.querySelector("#tabela tbody");
     const tr = document.createElement("tr");
 
@@ -40,28 +54,28 @@ function adicionarNaTabela(alerta) {
         <td>${alerta.descricao}</td>
         <td>R$ ${alerta.valorAlerta.toFixed(2)}</td>
         <td>${alerta.acao === "comprar" ? "Compra Automática" : "Exibir Alerta"}</td>
+        <td>
+            <button class="btn btn-danger btn-sm ms-2" onclick="excluirAlerta(${indice})">Excluir</button>
+        </td>
     `;
 
     tabela.appendChild(tr);
 }
 
-
-function apagarLinhas(tabela) {
-    // Seleciona o corpo da tabela 
-    var corpoTabela = tabela.querySelector("tbody");
-
-    // Enquanto houver linhas no corpo da tabela, remove a primeira
-    while (corpoTabela.rows.length > 0) {
-        corpoTabela.deleteRow(0);
-    }
-}
-
 function cadastrar() {
     const produtoSelect = document.getElementById("produtoSelect");
     const produtoSelecionado = produtoSelect.options[produtoSelect.selectedIndex];
+
+    if (!produtoSelecionado || produtoSelecionado.disabled) {
+        alert("Selecione um produto válido.");
+        return;
+    }
+
     const descricao = produtoSelecionado.text;
     const chaveProduto = produtoSelecionado.value;
-    const valorAlerta = parseFloat(document.getElementById("valorAlerta").value);
+    let valorAlerta = $('#valorAlerta').cleanVal();
+    valorAlerta = parseFloat(valorAlerta) / 100;
+
     const acao = document.getElementById("acaoAlerta").value;
 
     if (!chaveProduto || isNaN(valorAlerta)) {
@@ -80,11 +94,34 @@ function cadastrar() {
     alertas.push(alerta);
     localStorage.setItem("alertasPreco", JSON.stringify(alertas));
 
-    adicionarNaTabela(alerta);
+    adicionarNaTabela(alerta, alertas.length - 1);
+}
+
+function excluirAlerta(indice) {
+    let alertas = JSON.parse(localStorage.getItem("alertasPreco")) || [];
+    
+    if (indice > -1) {
+        alertas.splice(indice, 1);
+        localStorage.setItem("alertasPreco", JSON.stringify(alertas));
+        atualizarTabela();
+    }
+}
+
+function atualizarTabela() {
+    const tabela = document.querySelector("#tabela tbody");
+    tabela.innerHTML = "";
+
+    const alertas = JSON.parse(localStorage.getItem("alertasPreco")) || [];
+    alertas.forEach((alerta, index) => {
+        adicionarNaTabela(alerta, index);
+    });
 }
 
 async function verificarAlertasDePreco() {
     const alertas = JSON.parse(localStorage.getItem("alertasPreco")) || [];
+    const compras = JSON.parse(localStorage.getItem("comprasRealizadas")) || [];
+
+    const novosAlertas = [];
 
     for (const alerta of alertas) {
         try {
@@ -93,14 +130,27 @@ async function verificarAlertasDePreco() {
 
             if (produto && produto.valor <= alerta.valorAlerta) {
                 if (alerta.acao === "alerta") {
-                    alert(`O produto "${alerta.descricao}" atingiu o valor desejado!`);
+                    alert(`O produto "${produto.descricao}" atingiu o valor desejado!`);
+                    novosAlertas.push(alerta);
                 } else if (alerta.acao === "comprar") {
-                    console.log(`Simulando compra do produto "${alerta.descricao}"...`);
-                }
-            }
+                    console.log(`Simulando compra do produto "${produto.descricao}"...`);
 
+                    compras.push({
+                        id: produto.id,
+                        descricao: produto.descricao,
+                        valor: produto.valor,
+                        urlImagem: produto.urlImagem
+                    });
+                }
+            } else {
+                novosAlertas.push(alerta);
+            }
         } catch (erro) {
             console.error("Erro ao verificar preço:", erro);
+            novosAlertas.push(alerta);
         }
     }
+
+    localStorage.setItem("alertasPreco", JSON.stringify(novosAlertas));
+    localStorage.setItem("comprasRealizadas", JSON.stringify(compras));
 }
