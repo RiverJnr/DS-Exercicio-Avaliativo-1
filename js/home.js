@@ -133,7 +133,7 @@ async function verificarAlertasDePreco() {
                     alert(`O produto "${produto.descricao}" atingiu o valor desejado!`);
                     novosAlertas.push(alerta);
                 } else if (alerta.acao === "comprar") {
-                    console.log(`Simulando compra do produto "${produto.descricao}"...`);
+                    alert(`Produto "${produto.descricao}" comprado!`);
 
                     compras.push({
                         id: produto.id,
